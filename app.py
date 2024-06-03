@@ -44,10 +44,10 @@ def plot_signature(signature, primary_sig, secondary_sig, title):
     # Create a new figure
     fig, ax = plt.subplots(figsize=(20, 6))
     # Create a grouped bar plot
-    sns.barplot(x=df.index, y='Proportion', data=df, hue='MutationType', dodge=True, palette=mutation_a, ax=ax)
+    sns.barplot(x=df.index, y='Proportion', data=df, hue='MutationType', dodge=True, palette=mutation_colors, ax=ax)
 
     ax.set_xlabel('Trinucleotide Context')
-    ax.set_ylabel('Proportion of Single Base Substitutions')
+    ax.set_ylabel('Δ Proportion of Single Base Substitutions')
     ax.set_title(f"{title}\nCosine Similarity: {cosine_sim:.4f}")
     ax.legend(title='Mutation Types', loc='upper right')
     plt.xticks(rotation=90)
@@ -71,13 +71,15 @@ def plot_signature(signature, primary_sig, secondary_sig, title):
         mutation_type = re.search(r'\[(\w>\w)\]', label.get_text()).group(1)
         label.set_color(mutation_colors[mutation_type])
 
-    
     # Find the top 5 points furthest from zero in either direction
     top_5_indices = df['Proportion'].abs().nlargest(5).index
     for idx in top_5_indices:
         mutation_label = idx
-        ax.text(idx, df.loc[idx, 'Proportion'], mutation_label, color='black', ha='center', va='bottom' if df.loc[idx, 'Proportion'] > 0 else 'top', rotation=45)
-        
+        position = df.index.get_loc(idx)  # Get the position of the index label
+        ax.text(position, df.loc[idx, 'Proportion'], mutation_label, color='black', ha='center', va='bottom' if df.loc[idx, 'Proportion'] > 0 else 'top', rotation=90)
+  
+
+
     # Save the plot to a bytes buffer
     buf = io.BytesIO()
     fig.savefig(buf, format='png')
@@ -131,6 +133,31 @@ def plot_individual_signature(signature, sig_name, title):
         label.set_color(mutation_colors[mutation_type])
 
     # Save the plot to a bytes buffer
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png')
+    buf.seek(0)
+    # Encode the plot as base64 for embedding in HTML
+    plot_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    # Close the figure to free up memory
+    plt.close(fig)
+    return plot_base64
+
+def rank_signatures_by_context(mutation_context):
+    context_row = data.loc[mutation_context]
+    sorted_row = context_row.sort_values(ascending=False)
+    ranked_signatures_df = pd.DataFrame({'Proportion': sorted_row.values}, index=sorted_row.index)
+    return ranked_signatures_df
+
+def plot_ranked_signatures(ranked_signatures_df, mutation_context):
+    fig, ax = plt.subplots(figsize=(20, 6))
+    sns.barplot(x=ranked_signatures_df.index, y='Proportion', data=ranked_signatures_df, ax=ax)
+    ax.set_xlabel('Signature')
+    ax.set_ylabel('Proportion')
+    ax.set_title(f'COSMIC_v3.4_SBS_GRCh38 Signatures Ranked by Proportion of {mutation_context} activity')
+    plt.xticks(rotation=90)
+    plt.xticks(fontsize=8)
+    plt.subplots_adjust(bottom=0.25)
+    # Save the plot to a bytes bufferr
     buf = io.BytesIO()
     fig.savefig(buf, format='png')
     buf.seek(0)
@@ -220,6 +247,13 @@ def generate_plot():
     subtracted_signature = subtract_signatures(primary_signature, secondary_signature)
     plot_base64, primary_sig_plot, secondary_sig_plot = plot_signature(subtracted_signature, primary_signature, secondary_signature, f'{primary_signature} - {secondary_signature}')
     return jsonify({'plot_base64': plot_base64, 'primary_sig_plot': primary_sig_plot, 'secondary_sig_plot': secondary_sig_plot})
+
+@app.route('/context', methods=['POST'])
+def get_context_ranking():
+    mutation_context = request.form['mutation_context']
+    ranked_signatures_df = rank_signatures_by_context(mutation_context)
+    plot_base64 = plot_ranked_signatures(ranked_signatures_df, mutation_context)
+    return jsonify({'plot_base64': plot_base64})
 
 if __name__ == '__main__':
     app.run(debug=True)
