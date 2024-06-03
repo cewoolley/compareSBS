@@ -7,7 +7,20 @@
         $(document).ready(function() {
             $('#subtractForm').submit(function(event) {
                 event.preventDefault();
-                var formData = $(this).serialize();
+                submitForm($(this));
+            });
+
+            $('#luckyButton').click(function(event) {
+                event.preventDefault();
+                var primarySignature = $('#primary_signature option').eq(Math.floor(Math.random() * $('#primary_signature option').length)).val();
+                var secondarySignature = $('#secondary_signature option').eq(Math.floor(Math.random() * $('#secondary_signature option').length)).val();
+                $('#primary_signature').val(primarySignature);
+                $('#secondary_signature').val(secondarySignature);
+                submitForm($('#subtractForm'));
+            });
+
+            function submitForm(form) {
+                var formData = form.serialize();
                 $.ajax({
                     url: '/plot',
                     type: 'POST',
@@ -24,7 +37,7 @@
                         $('#spinnerContainer').hide();
                     }
                 });
-            });
+            }
         });
     </script>
     <style>
@@ -68,7 +81,7 @@
         *Fix context ordering within each mutation type to better match COSMIC site<br>
         *Currently a little slow as minimal resources allocated.<br>
         *Include experimental signatures v1.0 as an option too?</h6>
-    <h3>Select signatures:</h3>
+    <h3>Select signatures to compare...</h3>
     <form id="subtractForm">
         <label for="primary_signature">Primary Signature:</label>
         <select name="primary_signature" id="primary_signature">
@@ -84,12 +97,74 @@
             {% endfor %}
         </select>
         <br>
-        <input type="submit" value="Subtract Signatures">
+        <input type="submit" value="Compare Selection">
+        <br>or...
     </form>
+    <button id="luckyButton">I'm Feeling Lucky</button>
     <div id="spinnerContainer"></div>
     <div id="plotContainer"></div>
     <div id="individualPlotsContainer"></div>
     <br>
+
+    <h3>Or rank signatures for a given 3nt context...</h3>
+    <form id="contextForm">
+        <label for="mutation_context">Trinucleotide Context (e.g. T[C>G]A):</label>
+        <input type="text" name="mutation_context" id="mutation_context">
+        <input type="submit" value="Rank Signatures">
+    </form>
+    
+    <div id="spinnerContainer"></div>
+    <div id="plotContainer"></div>
+    
+    <script>
+        $(document).ready(function() {
+            $('#contextForm').submit(function(event) {
+                event.preventDefault();
+                submitContextForm($(this));
+            });
+    
+            function submitContextForm(form) {
+                var formData = form.serialize();
+                $('#spinnerContainer').html('<div class="spinner"></div>').show();
+                $.ajax({
+                    url: '/context',
+                    type: 'POST',
+                    data: formData,
+                    beforeSend: function() {
+                        $('#plotContainer').html('');
+                    },
+                    success: function(response) {
+                        $('#plotContainer').html('<img src="data:image/png;base64,' + response.plot_base64 + '" alt="Ranked Signatures Plot" style="width: 100%; height: auto;">');
+                    },
+                    complete: function() {
+                        $('#spinnerContainer').hide();
+                    }
+                });
+            }
+        });
+    </script>
+    
+    <style>
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+    
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
     <h5>
         connor.woolley | Tomlinson Group
         <br>
