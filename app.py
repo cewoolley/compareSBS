@@ -44,7 +44,7 @@ def plot_signature(signature, primary_sig, secondary_sig, title):
     # Create a new figure
     fig, ax = plt.subplots(figsize=(20, 6))
     # Create a grouped bar plot
-    sns.barplot(x=df.index, y='Proportion', data=df, hue='MutationType', dodge=True, palette=mutation_colors, ax=ax)
+    sns.barplot(x=df.index, y='Proportion', data=df, hue='MutationType', dodge=True, palette=mutation_a, ax=ax)
 
     ax.set_xlabel('Trinucleotide Context')
     ax.set_ylabel('Proportion of Single Base Substitutions')
@@ -53,7 +53,7 @@ def plot_signature(signature, primary_sig, secondary_sig, title):
     plt.xticks(rotation=90)
     plt.xticks(fontsize=8)
 
-    # Set background colors above and below y=0 so we can easily see which is which, looks better hopefully. 
+    # Set background colours above and below y=0 so we can easily see which is which, looks better hopefully. 
     ax.axhspan(0, 1, facecolor='#34a1eb', alpha=0.03)  # Above y=0
     ax.axhspan(-1, 0, facecolor='#fcad03', alpha=0.03)  # Below y=0
 
@@ -70,6 +70,13 @@ def plot_signature(signature, primary_sig, secondary_sig, title):
     for label in labels:
         mutation_type = re.search(r'\[(\w>\w)\]', label.get_text()).group(1)
         label.set_color(mutation_colors[mutation_type])
+
+    
+    # Find the top 5 points furthest from zero in either direction
+    top_5_indices = df['Proportion'].abs().nlargest(5).index
+    for idx in top_5_indices:
+        mutation_label = idx
+        ax.text(idx, df.loc[idx, 'Proportion'], mutation_label, color='black', ha='center', va='bottom' if df.loc[idx, 'Proportion'] > 0 else 'top', rotation=45)
         
     # Save the plot to a bytes buffer
     buf = io.BytesIO()
@@ -122,6 +129,7 @@ def plot_individual_signature(signature, sig_name, title):
     for label in labels:
         mutation_type = re.search(r'\[(\w>\w)\]', label.get_text()).group(1)
         label.set_color(mutation_colors[mutation_type])
+
     # Save the plot to a bytes buffer
     buf = io.BytesIO()
     fig.savefig(buf, format='png')
