@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Signature Subtraction</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#subtractForm').submit(function(event) {
+                event.preventDefault();
+                var formData = $(this).serialize();
+                $.ajax({
+                    url: '/plot',
+                    type: 'POST',
+                    data: formData,
+                    beforeSend: function() {
+                        $('#spinnerContainer').html('<div class="spinner"></div>').show();
+                    },
+                    success: function(response) {
+                        $('#plotContainer').html('<img src="data:image/png;base64,' + response.plot_base64 + '" alt="Subtracted Signature Plot" style="width: 100%; height: auto;">');
+                        $('#individualPlotsContainer').html('<div class="individual-plot-container"><img src="data:image/png;base64,' + response.primary_sig_plot + '" alt="Primary Signature Plot" style="width: 50%; height: auto;"><img src="data:image/png;base64,' + response.secondary_sig_plot + '" alt="Secondary Signature Plot" style="width: 50%; height: auto;"></div>');
+                        $('#spinnerContainer').hide();
+                    },
+                    complete: function() {
+                        $('#spinnerContainer').hide();
+                    }
+                });
+            });
+        });
+    </script>
+    <style>
+        body, h1, label, select, input {
+            font-family: Arial, sans-serif;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+
+        #spinnerContainer {
+            padding: 20px 0;
+            display: none;
+        }
+
+        .individual-plot-container {
+            text-align: center;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>CompareSBS -  SBS96 Signature Comparison</h1>
+    <h5>Subtract <a href="//cancer.sanger.ac.uk/signatures/">COSMIC Signatures v3.4 SBS 96</a> from one another and display Cosine Similarity for easier comparison.<br></h5>
+    <h6>Todo:<br>
+        *Fix context ordering within each mutation type to better match COSMIC site<br>
+        *Currently a little slow as minimal resources allocated.<br>
+        *Include experimental signatures v1.0 as an option too?</h6>
+    <h3>Select signatures:</h3>
+    <form id="subtractForm">
+        <label for="primary_signature">Primary Signature:</label>
+        <select name="primary_signature" id="primary_signature">
+            {% for signature, aetiology in signatures.items() %}
+            <option value="{{ signature }}">{{ signature }} - {{ aetiology }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="secondary_signature">Secondary Signature:</label>
+        <select name="secondary_signature" id="secondary_signature">
+            {% for signature, aetiology in signatures.items() %}
+            <option value="{{ signature }}">{{ signature }} - {{ aetiology }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <input type="submit" value="Subtract Signatures">
+    </form>
+    <div id="spinnerContainer"></div>
+    <div id="plotContainer"></div>
+    <div id="individualPlotsContainer"></div>
+    <br>
+    <h5>
+        connor.woolley | Tomlinson Group
+        <br>
+        <img src="https://www.oncology.ox.ac.uk/images/homepage/oncology-logo-msd-invert.png" height="100">
+        <img src="https://www.oncology.ox.ac.uk/images/induction/ox_brand3_pos.gif" height="100">
+    </h5>
+</body>
+</html>
