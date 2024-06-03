@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg') # Set the backend to 'Agg' else crashes on mac...
 import matplotlib.pyplot as plt
+from matplotlib.offsetbox import AnchoredText  # Import AnchoredText
 import seaborn as sns
 import re
 import io
@@ -149,6 +150,95 @@ def rank_signatures_by_context(mutation_context):
     return ranked_signatures_df
 
 def plot_ranked_signatures(ranked_signatures_df, mutation_context):
+    signatures = {
+        'SBS1': 'Spontaneous deamination of 5-methylcytosine (clock-like signature)',
+        'SBS2': 'Activity of APOBEC family of cytidine deaminases',
+        'SBS3': 'Defective homologous recombination DNA damage repair',
+        'SBS4': 'Tobacco smoking',
+        'SBS5': 'Unknown (clock-like signature)',
+        'SBS6': 'Defective DNA mismatch repair',
+        'SBS7a': 'Ultraviolet light exposure',
+        'SBS7b': 'Ultraviolet light exposure',
+        'SBS7c': 'Ultraviolet light exposure',
+        'SBS7d': 'Ultraviolet light exposure',
+        'SBS8': 'Unknown',
+        'SBS9': 'Polimerase eta somatic hypermutation activity',
+        'SBS10a': 'Polymerase epsilon exonuclease domain mutations',
+        'SBS10b': 'Polymerase epsilon exonuclease domain mutations',
+        'SBS10c': 'Defective POLD1 proofreading',
+        'SBS10d': 'Defective POLD1 proofreading',
+        'SBS11': 'Temozolomide treatment',
+        'SBS12': 'Unknown',
+        'SBS13': 'Activity of APOBEC family of cytidine deaminases',
+        'SBS14': 'Concurrent polymerase epsilon mutation and defective DNA mismatch repair',
+        'SBS15': 'Defective DNA mismatch repair',
+        'SBS16': 'Unknown',
+        'SBS17a': 'Unknown',
+        'SBS17b': 'Unknown',
+        'SBS18': 'Damage by reactive oxygen species',
+        'SBS19': 'Unknown',
+        'SBS20': 'Concurrent POLD1 mutations and defective DNA mismatch repair',
+        'SBS21': 'Defective DNA mismatch repair',
+        'SBS22a': 'Aristolochic acid exposure',
+        'SBS22b': 'Aristolochic acid exposure',
+        'SBS23': 'Unknown',
+        'SBS24': 'Aflatoxin exposure',
+        'SBS25': 'Chemotherapy treatment',
+        'SBS26': 'Defective DNA mismatch repair',
+        'SBS28': 'Unknown',
+        'SBS29': 'Tobacco chewing',
+        'SBS30': 'Defective DNA base excision repair due to NTHL1 mutations',
+        'SBS31': 'Platinum chemotherapy treatment',
+        'SBS32': 'Azathioprine treatment',
+        'SBS33': 'Unknown',
+        'SBS34': 'Unknown',
+        'SBS35': 'Platinum chemotherapy treatment',
+        'SBS36': 'Defective DNA base excision repair due to MUTYH mutations',
+        'SBS37': 'Unknown',
+        'SBS38': 'Indirect effect of ultraviolet light',
+        'SBS39': 'Unknown',
+        'SBS40a': 'Unknown',
+        'SBS40b': 'Unknown',
+        'SBS40c': 'Unknown',
+        'SBS41': 'Unknown',
+        'SBS42': 'Haloalkane exposure',
+        'SBS44': 'Defective DNA mismatch repair',
+        'SBS84': 'Activity of activation-induced cytidine deaminase (AID)',
+        'SBS85': 'Indirect effects of activation-induced cytidine deaminase (AID)',
+        'SBS86': 'Unknown chemotherapy treatment',
+        'SBS87': 'Thiopurine chemotherapy treatment',
+        'SBS88': 'Colibactin exposure (E.coli bacteria carrying pks pathogenicity island)',
+        'SBS89': 'Unknown',
+        'SBS90': 'Duocarmycin exposure',
+        'SBS91': 'Unknown',
+        'SBS92': 'Tobacco smoking',
+        'SBS93': 'Unknown',
+        'SBS94': 'Unknown',
+        'SBS96': 'Unknown',
+        'SBS97': 'Unknown',
+        'SBS98': 'Unknown',
+        'SBS99': 'Melphalan exposure',
+        "SBS27": "Artefact",
+        "SBS43": "Artefact",
+        "SBS45": "Artefact",
+        "SBS46": "Artefact",
+        "SBS47": "Artefact",
+        "SBS48": "Artefact",
+        "SBS49": "Artefact",
+        "SBS50": "Artefact",
+        "SBS51": "Artefact",
+        "SBS52": "Artefact",
+        "SBS53": "Artefact",
+        "SBS54": "Artefact",
+        "SBS55": "Artefact",
+        "SBS56": "Artefact",
+        "SBS57": "Artefact",
+        "SBS58": "Artefact",
+        "SBS59": "Artefact",
+        "SBS60": "Artefact",
+        "SBS95": "Artefact"
+    }
+
     fig, ax = plt.subplots(figsize=(20, 6))
     sns.barplot(x=ranked_signatures_df.index, y='Proportion', data=ranked_signatures_df, ax=ax)
     ax.set_xlabel('Signature')
@@ -157,7 +247,20 @@ def plot_ranked_signatures(ranked_signatures_df, mutation_context):
     plt.xticks(rotation=90)
     plt.xticks(fontsize=8)
     plt.subplots_adjust(bottom=0.25)
-    # Save the plot to a bytes bufferr
+
+    # Get the highest signature and its aetiology
+    highest_signature = ranked_signatures_df.index[0]
+    highest_signature_aetiology = signatures[highest_signature]
+
+    # Annotate the plot with an arrow and label
+    highest_bar = ax.containers[0].get_children()[0]
+    x_coord = highest_bar.get_x() + highest_bar.get_width() / 2
+    y_coord = highest_bar.get_height()
+    #ax.annotate('', xy=(x_coord, y_coord), xytext=(x_coord, y_coord + 0.05), arrowprops=dict(arrowstyle='->'))
+    at = AnchoredText(f'Top Sig: {highest_signature} ({highest_signature_aetiology})', prop=dict(size=10), frameon=True, loc='upper left')
+    ax.add_artist(at)
+
+    # Save the plot to a bytes buffer
     buf = io.BytesIO()
     fig.savefig(buf, format='png')
     buf.seek(0)
@@ -236,7 +339,26 @@ def index():
         'SBS96': 'Unknown',
         'SBS97': 'Unknown',
         'SBS98': 'Unknown',
-        'SBS99': 'Melphalan exposure'
+        'SBS99': 'Melphalan exposure',
+        "SBS27": "Artefact",
+        "SBS43": "Artefact",
+        "SBS45": "Artefact",
+        "SBS46": "Artefact",
+        "SBS47": "Artefact",
+        "SBS48": "Artefact",
+        "SBS49": "Artefact",
+        "SBS50": "Artefact",
+        "SBS51": "Artefact",
+        "SBS52": "Artefact",
+        "SBS53": "Artefact",
+        "SBS54": "Artefact",
+        "SBS55": "Artefact",
+        "SBS56": "Artefact",
+        "SBS57": "Artefact",
+        "SBS58": "Artefact",
+        "SBS59": "Artefact",
+        "SBS60": "Artefact",
+        "SBS95": "Artefact"
     }
     return render_template('index.html', signatures=signatures)
 
